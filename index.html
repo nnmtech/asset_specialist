@@ -15,18 +15,30 @@
     <meta property="og:image" content="https://nmassetspecialists.com/og-image.jpg">
     
     <!-- Structured Data -->
-    <script type="application/ld+json">
-    {
-        "@context": "https://schema.org",
-        "@type": "FinancialService",
-        "name": "NM Asset Specialists",
-        "description": "Asset recovery specialists helping Georgians claim owed funds from property dispositions",
-        "url": "https://nmassetspecialists.com",
-        "areaServed": "Georgia",
-        "telephone": "+1-404-XXX-XXXX",
-        "priceRange": "Contingency (Success Only)"
-    }
-    </script>
+    <script>
+document.getElementById('claimForm').addEventListener('submit', function(e) {
+  e.preventDefault();
+  
+  // Capture ALL form data
+  const formData = new FormData(this);
+  const lead = Object.fromEntries(formData);
+  
+  // Store locally + show success
+  localStorage.setItem('latest_lead', JSON.stringify(lead));
+  document.getElementById('success').innerHTML = `
+    <h3>✅ Lead Captured Successfully!</h3>
+    <p><strong>${lead.fullName}</strong></p>
+    <p>Phone: ${lead.phone} | Email: ${lead.email}</p>
+    <p>Specialist calling within 24 hours!</p>
+  `;
+  document.getElementById('success').style.display = 'block';
+  this.style.display = 'none';
+  
+  // Copy to clipboard for you
+  navigator.clipboard.writeText(JSON.stringify(lead, null, 2));
+  console.log('🆕 NEW LEAD:', lead);
+});
+</script>
 
     <style>
         :root {
