@@ -1,0 +1,11 @@
+{
+  "name": "nm-asset-specialists",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "airtable": "^0.12.2"
+  },
+  "scripts": {
+    "dev": "vercel dev"
+  }
+}
