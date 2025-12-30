@@ -65,8 +65,12 @@ button { width:100%; padding:15px; background:var(--accent); color:white; border
   <label for="zip">ZIP Code *</label>
   <input type="text" id="zip" name="zip" required pattern="^\d{5}$">
 
-  <!-- Invisible Turnstile -->
-  <div class="cf-turnstile" data-sitekey="YOUR_SITE_KEY" data-callback="onTurnstileSuccess" style="display:none;"></div>
+  <!-- Invisible Turnstile - FIXED -->
+<div class="cf-turnstile" 
+     data-sitekey="YOUR_REAL_SITE_KEY" 
+     data-callback="onTurnstileSuccess" 
+     data-size="invisible"
+     style="display:none;"></div>
 
   <button type="submit">🚀 Start Recovery Process →</button>
 </form>
@@ -123,7 +127,8 @@ document.getElementById('assetForm').addEventListener('submit', async function(e
   }
 });
 </script>
-
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<div class="cf-turnstile" data-sitekey="YOUR_REAL_SITE_KEY" data-callback="onTurnstileSuccess" data-size="invisible" style="display:none;"></div>
 </body>
 </html>
 
