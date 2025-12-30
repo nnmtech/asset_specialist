@@ -11,96 +11,119 @@
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 
 <style>
-/* Include all your previous CSS here */
+:root {
+  --primary: #1e40af;
+  --accent: #10b981;
+  --dark: #111827;
+  --light: #f9fafb;
+  --gray: #6b7280;
+  --white: #ffffff;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: var(--dark); margin:0; padding:0; background:var(--light); }
+.container { max-width: 600px; margin: 0 auto; padding: 20px; }
+h1 { color: var(--primary); text-align:center; }
+form { background:white; padding:30px; border-radius:10px; box-shadow:0 10px 30px rgba(0,0,0,0.1); }
+input, select { width:100%; padding:12px; margin:10px 0; border:1px solid #ddd; border-radius:5px; box-sizing:border-box; }
+button { width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:5px; font-size:18px; cursor:pointer; font-weight:bold; }
+.success-message { display:none; background:#d4edda; color:#155724; padding:20px; border-radius:5px; text-align:center; margin-top:20px; }
+.loading { display:none; text-align:center; }
+.spinner { border: 3px solid #f3f4f6; border-top: 3px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 1rem; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-<header>
-<nav class="container">
-<a href="#" class="logo">NM Asset Specialists</a>
-<a href="#form" class="cta-button">Claim Now →</a>
-</nav>
-</header>
 
-<section class="hero">
 <div class="container">
-<h1>We've Located Assets Owed to You</h1>
-<p class="hero-subtitle">Complete our secure form to start recovery. No upfront fees. Paid only on success.</p>
-<a href="#form" class="cta-button">Start Recovery Process</a>
-</div>
-</section>
+<h1>🤑 NM Asset Specialists</h1>
+<p style="text-align:center;font-size:1.2em;color:#666">We've located <strong>assets owed to you</strong>. Complete form to claim.</p>
 
-<section class="form-section" id="form">
-<div class="container">
-<div class="form-container">
-<h2 class="form-title">Verify Your Identity & Claim Assets</h2>
-<p class="form-subtitle">Takes 2 minutes. We'll handle the rest.</p>
 <form id="assetForm">
-<div class="form-group">
-<label for="fullName">Full Legal Name *</label>
-<input type="text" id="fullName" name="fullName" required>
-</div>
-<div class="form-group">
-<label for="dob">Date of Birth *</label>
-<input type="date" id="dob" name="dob" required>
-</div>
-<div class="form-group">
-<label for="phone">Phone Number *</label>
-<input type="tel" id="phone" name="phone" required pattern="^\+?[0-9]{10,15}$">
-</div>
-<div class="form-group">
-<label for="email">Email Address *</label>
-<input type="email" id="email" name="email" required>
-</div>
-<div class="form-group">
-<label for="address">Current Address *</label>
-<input type="text" id="address" name="address" required>
-</div>
-<div class="form-group">
-<label for="city">City *</label>
-<input type="text" id="city" name="city" required>
-</div>
-<div class="form-group">
-<label for="state">State *</label>
-<select id="state" name="state" required>
-<option value="GA" selected>Georgia (GA)</option>
-</select>
-</div>
-<div class="form-group">
-<label for="zip">ZIP Code *</label>
-<input type="text" id="zip" name="zip" pattern="[0-9]{5}" required>
-</div>
-<!-- Cloudflare Turnstile -->
-<div class="cf-turnstile" data-sitekey="YOUR_SITE_KEY" data-callback="onTurnstileSuccess" style="display:none;"></div>
+  <label for="fullName">Full Legal Name *</label>
+  <input type="text" id="fullName" name="fullName" required>
 
-<button type="submit" class="cta-button" style="width:100%; margin-top:1rem;">Submit & Start Recovery Process</button>
+  <label for="dob">Date of Birth *</label>
+  <input type="date" id="dob" name="dob" required>
+
+  <label for="phone">Phone Number *</label>
+  <input type="tel" id="phone" name="phone" required pattern="^\+?[0-9]{10,15}$">
+
+  <label for="email">Email Address *</label>
+  <input type="email" id="email" name="email" required>
+
+  <label for="address">Street Address *</label>
+  <input type="text" id="address" name="address" required>
+
+  <label for="city">City *</label>
+  <input type="text" id="city" name="city" required>
+
+  <label for="state">State *</label>
+  <select id="state" name="state" required>
+    <option value="">Select</option>
+    <option value="GA" selected>Georgia</option>
+  </select>
+
+  <label for="zip">ZIP Code *</label>
+  <input type="text" id="zip" name="zip" required pattern="^\d{5}$">
+
+  <!-- Invisible Turnstile -->
+  <div class="cf-turnstile" data-sitekey="YOUR_SITE_KEY" data-callback="onTurnstileSuccess" style="display:none;"></div>
+
+  <button type="submit">🚀 Start Recovery Process →</button>
 </form>
-<div id="loading" class="loading"><div class="spinner"></div><p>Processing your information securely...</p></div>
-<div id="success" class="success-message"><h3>✅ Success!</h3><p>Your information has been received. A recovery specialist will contact you within 24 hours to finalize your claim.</p></div>
+
+<div id="loading" class="loading">
+  <div class="spinner"></div>
+  <p>Processing your information securely...</p>
+</div>
+
+<div id="success" class="success-message">
+  ✅ SUCCESS! Specialist will call within 24 hours.
 </div>
 </div>
-</section>
 
 <script>
 let turnstileToken = '';
-function onTurnstileSuccess(token){ turnstileToken = token; }
+
+function onTurnstileSuccess(token) {
+    turnstileToken = token;
+}
 
 document.getElementById('assetForm').addEventListener('submit', async function(e){
- e.preventDefault();
- const formData = new FormData(this);
- const data = Object.fromEntries(formData);
- data.phone = data.phone.replace(/\D/g,'');
- data.turnstileToken = turnstileToken;
+  e.preventDefault();
+  const formData = new FormData(this);
+  const data = Object.fromEntries(formData);
 
- document.getElementById('loading').style.display='block';
- this.style.display='none';
+  if(!turnstileToken){
+      alert('CAPTCHA validation failed.');
+      return;
+  }
+  data.turnstileToken = turnstileToken;
 
- try {
- const response = await fetch('/api/submit-lead',{ method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
- if(response.ok){ document.getElementById('loading').style.display='none'; document.getElementById('success').style.display='block'; this.reset(); } 
- else{ throw new Error('Submission failed'); }
- } catch(e){ alert('Submission failed. Call 404-XXX-XXXX'); document.getElementById('loading').style.display='none'; this.style.display='block'; }
+  // Normalize phone
+  if(data.phone){ data.phone = data.phone.replace(/\D/g,''); }
+
+  document.getElementById('loading').style.display='block';
+  this.style.display='none';
+
+  try {
+    const res = await fetch('/api/submit-lead', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(data)
+    });
+    if(res.ok){
+      document.getElementById('loading').style.display='none';
+      document.getElementById('success').style.display='block';
+      this.reset();
+    } else { throw new Error('Submission failed'); }
+  } catch(err){
+    alert('Submission failed. Please try again or call 404-XXX-XXXX');
+    document.getElementById('loading').style.display='none';
+    this.style.display='block';
+  }
 });
 </script>
+
 </body>
 </html>
+
