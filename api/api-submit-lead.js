@@ -1,79 +1,63 @@
-import fetch from "node-fetch";
+// File: /api/submit-lead.js (Vercel Serverless Function)
 
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
-const RATE_LIMIT_MAX = 5; // max submissions per IP per window
-const rateLimitMap = new Map();
+import fetch from 'node-fetch';
+import rateLimit from 'express-rate-limit';
+import Airtable from 'airtable';
+
+// Airtable setup
+const base = new Airtable({ apiKey: process.env.AIRTABLE_API_KEY }).base(process.env.AIRTABLE_BASE_ID);
+const table = base('Leads');
+
+// Rate limiter
+const limiter = rateLimit({ windowMs: 60 * 1000, max: 5 }); // 5 requests per minute
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+  if(req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Apply rate limiter (Vercel adaptation)
+  try { await limiter(req, res); } catch { return res.status(429).json({ error: 'Too many requests' }); }
+
+  const data = req.body;
+
+  // Basic validation
+  const requiredFields = ['fullName','dob','phone','email','address','city','state','zip','turnstileToken'];
+  for(const field of requiredFields){
+    if(!data[field]) return res.status(400).json({ error: `${field} is required` });
   }
 
-  const ip = req.headers["x-forwarded-for"] || req.socket.remoteAddress;
+  // Phone validation
+  if(!/^\+?[0-9]{10,15}$/.test(data.phone)) return res.status(400).json({ error: 'Invalid phone' });
+  // Email validation
+  if(!/^\S+@\S+\.\S+$/.test(data.email)) return res.status(400).json({ error: 'Invalid email' });
 
-  // Rate limiting
-  const now = Date.now();
-  const requests = rateLimitMap.get(ip) || [];
-  const recent = requests.filter(t => now - t < RATE_LIMIT_WINDOW_MS);
-  if (recent.length >= RATE_LIMIT_MAX) {
-    return res.status(429).json({ error: "Too many requests. Please try again later." });
-  }
-  recent.push(now);
-  rateLimitMap.set(ip, recent);
+  // Turnstile verification
+  const verifyRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/x-www-form-urlencoded' },
+    body:`secret=${process.env.TURNSTILE_SECRET_KEY}&response=${data.turnstileToken}`
+  });
+  const verifyJson = await verifyRes.json();
+  if(!verifyJson.success) return res.status(400).json({ error:'CAPTCHA verification failed' });
 
-  const { turnstileToken, fullName, dob, phone, email, address, city, state, zip } = req.body;
-
-  // Validate Turnstile
-  const secretKey = process.env.TURNSTILE_SECRET_KEY; // set in Vercel env
-  if (!turnstileToken || !secretKey) {
-    return res.status(400).json({ error: "Missing Turnstile token or secret" });
-  }
-
+  // Store in Airtable
   try {
-    const cfRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        secret: secretKey,
-        response: turnstileToken,
-        remoteip: ip
-      })
-    });
-    const cfData = await cfRes.json();
-    if (!cfData.success) {
-      return res.status(400).json({ error: "CAPTCHA validation failed" });
-    }
-  } catch (err) {
-    return res.status(500).json({ error: "CAPTCHA verification error" });
-  }
+    await table.create([{ fields: { 
+      Name: data.fullName,
+      DOB: data.dob,
+      Phone: data.phone,
+      Email: data.email,
+      Address: data.address,
+      City: data.city,
+      State: data.state,
+      ZIP: data.zip,
+      Source: data.source,
+      Timestamp: new Date().toISOString()
+    }}]);
 
-  // Normalize input
-  const sanitized = {
-    fullName: String(fullName || "").trim(),
-    dob: String(dob || "").trim(),
-    phone: phone ? String(phone).replace(/\D/g, "") : "",
-    email: String(email || "").trim().toLowerCase(),
-    address: String(address || "").trim(),
-    city: String(city || "").trim(),
-    state: String(state || "").trim(),
-    zip: zip ? String(zip).replace(/\D/g, "") : "",
-    ip,
-    timestamp: new Date().toISOString()
-  };
-
-  // Minimal validation
-  if (!sanitized.fullName || !sanitized.phone || !sanitized.email) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  try {
-    // TODO: Replace with your actual storage / lead submission logic
-    console.log("Received lead:", sanitized);
-
-    return res.status(200).json({ message: "Lead submitted successfully" });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Internal server error" });
+    return res.status(200).json({ success:true });
+  } catch(err){
+    console.error('Airtable Error:', err);
+    return res.status(500).json({ error:'Internal Server Error' });
   }
 }
 
