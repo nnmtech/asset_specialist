@@ -25,18 +25,20 @@ export default async function handler(req, res){
 
   const { fullName, dob, phone, email, address, city, state, zip, turnstileToken, source } = req.body;
 
-  if(!fullName || !dob || !phone || !email || !address || !city || !state || !zip || !turnstileToken){
+  // Enhanced validation
+  if(!fullName?.trim() || !dob || !phone?.trim() || !email?.trim() || !address?.trim() || !city?.trim() || !state?.trim() || !zip?.trim() || !turnstileToken){
     return res.status(400).json({error:'Missing required fields'});
   }
 
-  // Verify Cloudflare Turnstile
+  // Verify Cloudflare Turnstile (FIXED content-type)
   const verify = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
     method:'POST',
     headers:{'Content-Type':'application/x-www-form-urlencoded'},
-    body:`secret=${process.env.TURNSTILE_SECRET_KEY}&response=${turnstileToken}&remoteip=${ip}`
+    body:`secret=${encodeURIComponent(process.env.TURNSTILE_SECRET_KEY)}&response=${encodeURIComponent(turnstileToken)}&remoteip=${encodeURIComponent(ip)}`
   });
   const json = await verify.json();
   if(!json.success){
+    console.error('Turnstile failed:', json);
     return res.status(400).json({error:'CAPTCHA validation failed'});
   }
 
@@ -46,22 +48,24 @@ export default async function handler(req, res){
   try {
     await base('Leads').create([{
       fields:{
-        FullName: fullName,
+        FullName: fullName.trim(),
         DOB: dob,
         Phone: normalizedPhone,
-        Email: email,
-        Address: address,
-        City: city,
-        State: state,
-        ZIP: zip,
+        Email: email.trim().toLowerCase(),
+        Address: address.trim(),
+        City: city.trim(),
+        State: state.trim(),
+        ZIP: zip.trim(),
         Source: source || 'landing_page',
         IP: ip,
-        Timestamp: new Date().toISOString()
+        Timestamp: new Date().toISOString(),
+        Status: 'verified_lead'
       }
     }]);
+    console.log(`Lead saved: ${fullName} (${email})`);
     res.status(200).json({success:true});
   } catch(err){
     console.error('Airtable Error:', err);
-    res.status(500).json({error:'Internal Server Error'});
+    res.status(500).json({error:'Failed to save lead'});
   }
 }
